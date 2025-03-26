@@ -2,18 +2,35 @@ namespace QSParsingConsoleApp
 {
     public class QSParser
     {
-        // Example: count how many key-value pairs are in a query string
-        public int Count(string queryString)
+        private readonly Dictionary<string, string> _parameters;
+
+        public QSParser(string? queryString)
         {
-            if (string.IsNullOrWhiteSpace(queryString))
-                return 0;
+            _parameters = new Dictionary<string, string>();
 
-            // Remove leading '?' if present
-            if (queryString.StartsWith("?"))
-                queryString = queryString.Substring(1);
+            if (!string.IsNullOrEmpty(queryString))
+            {
+                var pairs = queryString.Split('&', StringSplitOptions.RemoveEmptyEntries);
 
-            var pairs = queryString.Split('&', System.StringSplitOptions.RemoveEmptyEntries);
-            return pairs.Length;
+                foreach (var pair in pairs)
+                {
+                    var keyValue = pair.Split('=', 2);
+                    if (keyValue.Length == 2)
+                    {
+                        _parameters[keyValue[0]] = keyValue[1];
+                    }
+                }
+            }
+        }
+
+        public int Count()
+        {
+            return _parameters.Count;
+        }
+
+        public string? ValueOf(string key)
+        {
+            return _parameters.TryGetValue(key, out var value) ? value : null;
         }
     }
 }
