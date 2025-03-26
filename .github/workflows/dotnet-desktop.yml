@@ -17,8 +17,8 @@ jobs:
     env:
       Solution_Name: QSParsing.sln
       Test_Project_Path: QSParsingConsoleAppTest/QSParsingConsoleAppTest.csproj
-      Wap_Project_Directory: QSParsingApp.Package
-      Wap_Project_Path: QSParsingApp.Package/QSParsingApp.Package.wapproj
+      Wap_Project_Directory: QSParsingConsoleApp.Package
+      Wap_Project_Path: QSParsingConsoleApp.Package/QSParsingConsoleApp.Package.wapproj
 
     steps:
     - name: Checkout code
