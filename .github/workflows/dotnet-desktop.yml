@@ -1,4 +1,4 @@
-name: .NET Core Desktop
+name: .NET Console App CI
 
 on:
   push:
@@ -7,59 +7,27 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-
+  build-and-test:
     runs-on: windows-latest
 
     env:
       Solution_Name: QSParsing.sln
       Test_Project_Path: QSParsingConsoleAppTest/QSParsingConsoleAppTest.csproj
-      Wap_Project_Directory: QSParsingConsoleApp.Package
-      Wap_Project_Path: QSParsingConsoleApp.Package/QSParsingConsoleApp.Package.wapproj
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.Solution_Name }}
 
-    - name: Run unit tests
-      run: dotnet test ${{ env.Test_Project_Path }}
+      - name: Build solution
+        run: dotnet build ${{ env.Solution_Name }} --configuration Release --no-restore
 
-    - name: Restore dependencies
-      run: msbuild ${{ env.Solution_Name }} /t:Restore /p:Configuration=${{ matrix.configuration }}
-
-    - name: Decode the signing certificate (.pfx)
-      run: |
-        $certificatePath = Join-Path -Path "${{ env.Wap_Project_Directory }}" -ChildPath "GitHubActionsWorkflow.pfx"
-        $folder = Split-Path -Path $certificatePath -Parent
-        if (!(Test-Path -Path $folder)) {
-          New-Item -ItemType Directory -Path $folder | Out-Null
-        }
-        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
-        [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
-      shell: pwsh
-
-    - name: Create MSIX package
-      run: msbuild ${{ env.Wap_Project_Path }} /p:Configuration=${{ matrix.configuration }} /p:UapAppxPackageBuildMode=StoreUpload /p:AppxBundle=Always /p:AppxBundlePlatforms="x86|x64" /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
-
-    - name: Clean up certificate
-      run: Remove-Item -Path "${{ env.Wap_Project_Directory }}\GitHubActionsWorkflow.pfx" -Force
-      shell: pwsh
-
-    - name: Upload MSIX package artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: MSIX Package
-        path: ${{ env.Wap_Project_Directory }}\AppPackages
+      - name: Run tests
+        run: dotnet test ${{ env.Test_Project_Path }} --no-build --verbosity normal
